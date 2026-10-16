@@ -104,6 +104,8 @@
   .ask-chip { background: transparent; border: 1px solid var(--line); color: var(--accent); border-radius: 999px; padding: 4px 12px; margin: 0 6px 6px 0; cursor: pointer; font-size: 13px; }
   .ask-chip:hover { border-color: var(--accent); }
   #ask-answer { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; line-height: 1.7; }
+  #ask-setup { margin-top: 10px; }
+  #ask-setup pre { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -156,13 +158,28 @@
   <section id="view-ask" class="hidden">
     <div class="card">
       <h3>💬 问一问 · AI 数据助理</h3>
-      <div class="muted" style="margin-bottom:10px">基于本地统计 + AI 汇总回答你关于活跃时长、应用排行、专注时段、趋势对比的问题。提问内容与统计数据摘要会经本地网关发送给免费 AI 模型（截图永不出本机）。</div>
+      <div class="muted" style="margin-bottom:10px">基于本地统计 + AI 汇总回答你关于活跃时长、应用排行、专注时段、趋势对比的问题。提问内容与统计数据摘要会发送给你自己配置的 AI 端点（本地 Ollama 或任意 OpenAI 兼容服务；截图永不出本机）。</div>
       <div id="ask-row">
         <input id="ask-input" placeholder="例如：今天我最专注的时段是几点？" maxlength="200">
         <button id="ask-btn" onclick="askQuestion()">提问</button>
       </div>
       <div id="ask-chips"></div>
       <div id="ask-answer" class="muted">还没有提问，试试上面的建议问题。</div>
+      <div id="ask-setup" class="hidden">
+        <div class="muted" style="line-height:1.9">「问一问」与 AI 总结需要接入一个 OpenAI 兼容的 AI 端点（本地 <b>Ollama</b> 完全免费；也可用任意云端服务）。三步就能用上：</div>
+        <pre>1) 安装 Ollama 后拉取模型：  ollama pull qwen2.5:7b
+2) 把 config.json 复制为 config.local.json，写入：
+{
+  "llm": {
+    "enabled": true,
+    "baseURL": "http://127.0.0.1:11434/v1",
+    "model": "qwen2.5:7b"
+  }
+}
+3) 重启生效：  timetrace restart
+
+（不配置也不影响：记录、统计、日报周报、热力图全部照常工作）</pre>
+      </div>
     </div>
   </section>
 </main>
@@ -288,6 +305,15 @@ window.toggleShots = function () {
 }
 
 /* ---------- 此刻 / 状态 ---------- */
+function applyAskAiState(o) {
+  const src = o || state.overview || {}
+  const on = !!(src.llm && src.llm.enabled)
+  const setup = $('ask-setup')
+  if (!setup) return
+  setup.classList.toggle('hidden', on)
+  $('ask-row').classList.toggle('hidden', !on)
+  $('ask-chips').classList.toggle('hidden', !on)
+}
 function renderStatus(o) {
   const bits = []
   bits.push('<span><span class="dot ' + (o.daemon.running ? 'green' : 'red') + '"></span>记录' + (o.daemon.running ? '运行中' : '已停止') + '</span>')
@@ -299,6 +325,7 @@ function renderStatus(o) {
     bits.push('<span><span class="dot gray"></span>AI 已关闭</span>')
   }
   $('status-badges').innerHTML = bits.join('')
+  applyAskAiState(o)
 }
 function renderCurrent(o) {
   const c = o.current
@@ -428,7 +455,7 @@ function setView(v) {
   $('view-week').classList.toggle('hidden', v !== 'week')
   $('view-ask').classList.toggle('hidden', v !== 'ask')
   if (v === 'week') loadWeek(isoWeekKey(state.day || new Date().toISOString().slice(0, 10)))
-  if (v === 'ask') $('ask-input').focus()
+  if (v === 'ask') { applyAskAiState(); if (!$('ask-row').classList.contains('hidden')) $('ask-input').focus() }
 }
 $('tab-day').onclick = () => setView('day')
 $('tab-week').onclick = () => setView('week')
