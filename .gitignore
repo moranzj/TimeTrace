@@ -1,0 +1,24 @@
+# 运行时数据（隐私，绝不进仓库）
+data/
+shots/
+
+# 本机私有配置（API key / 私有网关地址等）
+config.local.json
+
+# 构建产物
+node_modules/
+native/capture.exe
+tools/makeicon.exe
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 分发产物
+dist/
+*.zip
+*.tar.gz
+
+# Windows 快捷方式（本地生成）
+*.lnk

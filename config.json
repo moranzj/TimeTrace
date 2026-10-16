@@ -1,0 +1,33 @@
+﻿{
+  "_readme": "默认配置模板（随仓库分发，请勿在提交版本里放个人信息）。个人设置写到 config.local.json（已被 .gitignore 忽略），会覆盖此文件中的对应项。",
+  "tickSeconds": 10,
+  "idleThresholdSeconds": 60,
+  "summaryMinutes": 10,
+  "screenshots": {
+    "enabled": true,
+    "quality": 45,
+    "maxWidth": 1600,
+    "skipWhenIdleSeconds": 120
+  },
+  "retention": {
+    "screenshotDays": 7,
+    "maxScreenshotGB": 2.5,
+    "rawLogDays": 120
+  },
+  "dashboard": {
+    "enabled": true,
+    "port": 8377
+  },
+  "llm": {
+    "enabled": false,
+    "baseURL": "",
+    "apiKey": "",
+    "apiKeyFile": "",
+    "model": "",
+    "fallbackModels": [],
+    "timeoutSeconds": 45,
+    "minuteSummary": true,
+    "daySummary": true,
+    "weekSummary": true
+  }
+}

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>时迹 TimeTrace</title>
+<link rel="icon" href="/favicon.ico?v=3">
+<style>
+  :root {
+    --bg: #0e1320; --card: #171f31; --card2: #1c2740; --line: #26324e;
+    --text: #e8ecf6; --muted: #8b95ad; --accent: #6c8cff; --accent2: #9a6cff;
+    --green: #3ecf8e; --red: #ef5f5f; --amber: #e8b23e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.6 system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 14px 22px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #131a2c, #0e1320);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { font-size: 18px; font-weight: 700; }
+  nav { display: flex; gap: 6px; }
+  .tab {
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+    padding: 5px 16px; border-radius: 999px; cursor: pointer; font-size: 14px;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .status { margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.red { background: var(--red); }
+  .dot.amber { background: var(--amber); }
+  .dot.gray { background: #555f75; }
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 22px 60px; }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .card h3 { margin: 0 0 12px; font-size: 15px; color: #c6d0e8; font-weight: 600; }
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar button {
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-radius: 9px; padding: 6px 13px; cursor: pointer; font-size: 14px;
+  }
+  .toolbar button:hover { border-color: var(--accent); }
+  .toolbar input[type=date] {
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-radius: 9px; padding: 6px 10px; font-size: 14px;
+  }
+  .spacer { flex: 1; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat { padding: 13px 15px; margin: 0; }
+  .stat-label { color: var(--muted); font-size: 12.5px; }
+  .stat-val { font-size: 19px; font-weight: 700; margin-top: 3px; word-break: break-all; }
+  .stat-sub { font-size: 12px; margin-top: 2px; }
+  #current-card h3 { margin-bottom: 8px; }
+  .cur-title { font-size: 17px; font-weight: 600; margin-bottom: 3px; word-break: break-all; }
+  .two-col { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 92px; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { background: #0c111d; border-radius: 6px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .bar-val { color: var(--muted); font-size: 12.5px; text-align: right; white-space: nowrap; }
+  .hourly { display: flex; gap: 3px; align-items: flex-end; height: 130px; padding-top: 6px; }
+  .h-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 8px; }
+  .h-bar { background: linear-gradient(180deg, var(--accent2), var(--accent)); border-radius: 3px 3px 0 0; min-height: 2px; }
+  .h-label { text-align: center; font-size: 10px; color: var(--muted); margin-top: 4px; height: 14px; }
+  .win { border-left: 3px solid var(--accent); background: var(--card2); border-radius: 0 10px 10px 0; padding: 10px 14px; margin-bottom: 10px; }
+  .win-head { margin-bottom: 6px; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 5px; }
+  .chip { background: #101728; border: 1px solid var(--line); border-radius: 999px; padding: 1.5px 11px; font-size: 12.5px; }
+  .win-titles { font-size: 12.5px; }
+  .ai-line { margin-top: 6px; padding: 7px 11px; border-radius: 9px; background: rgba(108, 140, 255, .12); border: 1px solid rgba(108, 140, 255, .35); font-size: 13.5px; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 9px; }
+  .shot { width: 100%; border-radius: 9px; border: 1px solid var(--line); cursor: zoom-in; display: block; }
+  .shot:hover { border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  td.num, th.num { text-align: right; }
+  .up { color: var(--amber); } .down { color: var(--green); }
+  footer { text-align: center; color: #5a6478; font-size: 12px; padding: 10px 0 26px; }
+  .mini { font-size: 12px; background: transparent; color: var(--accent); border: none; cursor: pointer; padding: 0 4px; }
+  .empty { color: var(--muted); padding: 8px 0; }
+  .hm-wrap { display: flex; gap: 3px; overflow-x: auto; padding: 4px 0 2px; }
+  .hm-col { display: flex; flex-direction: column; gap: 3px; }
+  .hm-cell { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #1a2334; }
+  .hm-empty { background: transparent; }
+  .hm-cell.r1 { background: #143a52; } .hm-cell.r2 { background: #1d5f7d; }
+  .hm-cell.r3 { background: #2fa0bf; } .hm-cell.r4 { background: #56dcff; }
+  .hm-legend { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  #ask-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  #ask-input { flex: 1; background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 9px 12px; font-size: 14px; outline: none; }
+  #ask-input:focus { border-color: var(--accent); }
+  #ask-btn { background: var(--accent); color: #0b1020; border: none; border-radius: 8px; padding: 9px 18px; font-weight: 600; cursor: pointer; }
+  #ask-btn:disabled { opacity: .5; cursor: default; }
+  .ask-chip { background: transparent; border: 1px solid var(--line); color: var(--accent); border-radius: 999px; padding: 4px 12px; margin: 0 6px 6px 0; cursor: pointer; font-size: 13px; }
+  .ask-chip:hover { border-color: var(--accent); }
+  #ask-answer { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">👁️ 时迹 <span class="muted" style="font-size:12px;font-weight:400;letter-spacing:2.5px;vertical-align:2px">TIMETRACE</span></div>
+  <nav>
+    <button id="tab-day" class="tab active">今日</button>
+    <button id="tab-week" class="tab">本周</button>
+    <button id="tab-ask" class="tab">问一问</button>
+  </nav>
+  <div class="status" id="status-badges">加载中…</div>
+</header>
+
+<main>
+  <section id="view-day">
+    <div class="toolbar">
+      <button id="prev-day" title="前一天">◀</button>
+      <input type="date" id="day-input">
+      <button id="next-day" title="后一天">▶</button>
+      <span id="day-label" class="muted"></span>
+      <span class="spacer"></span>
+      <span id="refresh-note" class="muted"></span>
+    </div>
+    <div class="cards" id="summary-cards"></div>
+    <div class="card" id="current-card"></div>
+    <div class="two-col">
+      <div class="card"><h3>应用时长排行</h3><div id="apps"></div></div>
+      <div class="card"><h3>每小时活跃</h3><div class="hourly" id="hourly"></div></div>
+    </div>
+    <div class="card"><h3>🤖 AI 日报总结</h3><div id="day-ai" class="muted">暂无</div></div>
+    <div class="card"><h3>十分钟总结</h3><div id="timeline"></div></div>
+    <div class="card"><h3>截图墙 <span class="muted" id="shots-note"></span></h3><div class="shots" id="shots"></div></div>
+  </section>
+
+  <section id="view-week" class="hidden">
+    <div class="toolbar">
+      <button id="prev-week" title="上一周">◀</button>
+      <span id="week-label" style="font-weight:600"></span>
+      <button id="next-week" title="下一周">▶</button>
+      <span class="spacer"></span>
+      <span class="muted">切换周也可在「今日」页选日期</span>
+    </div>
+    <div class="cards" id="week-cards"></div>
+    <div class="card"><h3>🔥 活跃热力图（近 12 周）</h3><div id="heatmap"></div></div>
+    <div class="card"><h3>每日一览</h3><div id="week-days"></div></div>
+    <div class="card"><h3>应用排行（周）</h3><div id="week-apps"></div></div>
+    <div class="card"><h3>🤖 AI 周报总结</h3><div id="week-ai" class="muted">暂无</div></div>
+  </section>
+
+  <section id="view-ask" class="hidden">
+    <div class="card">
+      <h3>💬 问一问 · AI 数据助理</h3>
+      <div class="muted" style="margin-bottom:10px">基于本地统计 + AI 汇总回答你关于活跃时长、应用排行、专注时段、趋势对比的问题。提问内容与统计数据摘要会经本地网关发送给免费 AI 模型（截图永不出本机）。</div>
+      <div id="ask-row">
+        <input id="ask-input" placeholder="例如：今天我最专注的时段是几点？" maxlength="200">
+        <button id="ask-btn" onclick="askQuestion()">提问</button>
+      </div>
+      <div id="ask-chips"></div>
+      <div id="ask-answer" class="muted">还没有提问，试试上面的建议问题。</div>
+    </div>
+  </section>
+</main>
+<footer>数据全部保存在本机 · 时迹 TimeTrace 面板</footer>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const state = { view: 'day', day: null, dayData: null, showAllShots: false, overview: null, weekTimer: 0, asking: false, heatmap: null }
+
+const pad2 = (n) => String(n).padStart(2, '0')
+const fmtDur = (sec) => {
+  sec = Math.max(0, Math.round(sec || 0))
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60
+  if (h > 0) return h + ' 小时 ' + pad2(m) + ' 分'
+  if (m > 0) return m + ' 分 ' + pad2(s) + ' 秒'
+  return s + ' 秒'
+}
+const fmtBytes = (n) => {
+  const u = ['B', 'KB', 'MB', 'GB']; let i = 0; n = n || 0
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++ }
+  return n.toFixed(i === 0 ? 0 : 1) + ' ' + u[i]
+}
+const hm = (ms) => { const d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) }
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+async function api(p) {
+  const r = await fetch(p)
+  if (!r.ok) throw new Error('HTTP ' + r.status)
+  return r.json()
+}
+
+function isoWeekKey(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = t.getUTCDay() || 7
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((t - yearStart) / 86400000 + 1) / 7)
+  return t.getUTCFullYear() + '-W' + pad2(week)
+}
+const shiftDay = (dateStr, n) => {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + n)
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate())
+}
+
+/* ---------- 今日视图 ---------- */
+async function setDay(dayStr, reloadWeek) {
+  state.day = dayStr
+  $('day-input').value = dayStr
+  try {
+    const d = await api('/api/day?day=' + dayStr)
+    renderDay(d)
+  } catch (e) { $('apps').innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>' }
+  if (reloadWeek) loadWeek(isoWeekKey(dayStr))
+}
+
+const statCard = (label, val, sub) =>
+  '<div class="stat card"><div class="stat-label">' + label + '</div><div class="stat-val">' + val + '</div>' +
+  (sub ? '<div class="stat-sub muted">' + sub + '</div>' : '') + '</div>'
+
+function renderDay(d) {
+  state.dayData = d
+  $('day-label').textContent = d.day + (d.weekday ? ' · ' + d.weekday : '')
+  const cmp = d.compare || null
+  let cmpCard = ''
+  if (cmp) {
+    if (cmp.activeSec > 0) {
+      const diff = d.activeSec - cmp.activeSec
+      cmpCard = statCard('较昨日', '<span class="' + (diff >= 0 ? 'up' : 'down') + '">' + (diff >= 0 ? '+' : '−') + fmtDur(Math.abs(diff)) + '</span>', '昨日 ' + fmtDur(cmp.activeSec))
+    } else {
+      cmpCard = statCard('较昨日', '—', '昨日无记录')
+    }
+  }
+  $('summary-cards').innerHTML = [
+    statCard('活跃时长', fmtDur(d.activeSec)),
+    cmpCard,
+    statCard('空闲', fmtDur(d.idleSec)),
+    statCard('应用切换', d.switches + ' 次'),
+    statCard('最长专注', d.streak && d.streak.app ? esc(d.streak.app) : '—', d.streak && d.streak.sec ? fmtDur(d.streak.sec) : ''),
+    statCard('截图', d.shots.length + ' 张', fmtBytes(d.shotsBytes)),
+    statCard('记录跨度', d.firstMs ? hm(d.firstMs) + ' – ' + hm(d.lastMs) : '—'),
+  ].join('')
+
+  const maxSec = d.apps.length ? d.apps[0][1] : 1
+  $('apps').innerHTML = d.apps.slice(0, 12).map(([a, s]) =>
+    '<div class="bar-row"><div class="bar-name" title="' + esc(a) + '">' + esc(a) + '</div>' +
+    '<div class="bar-track"><div class="bar-fill" style="width:' + (s / maxSec * 100).toFixed(1) + '%"></div></div>' +
+    '<div class="bar-val">' + fmtDur(s) + '</div></div>'
+  ).join('') || '<div class="empty">暂无数据</div>'
+
+  const maxH = Math.max(1, ...d.hourly)
+  $('hourly').innerHTML = d.hourly.map((s, h) =>
+    '<div class="h-col" title="' + pad2(h) + ':00 活跃 ' + fmtDur(s) + '">' +
+    '<div class="h-bar" style="height:' + Math.round(s / maxH * 100) + '%"></div>' +
+    '<div class="h-label">' + (h % 3 === 0 ? pad2(h) : '') + '</div></div>'
+  ).join('')
+
+  $('timeline').innerHTML = d.windows.map((w) =>
+    '<div class="win"><div class="win-head"><b>' + hm(w.startMs) + ' – ' + hm(w.endMs) + '</b> ' +
+    '<span class="muted">活跃 ' + fmtDur(w.activeSec) +
+    (w.idleSec ? ' · 空闲 ' + fmtDur(w.idleSec) : '') +
+    (w.switches ? ' · 切换 ' + w.switches + ' 次' : '') + '</span></div>' +
+    '<div class="chips">' + w.apps.map(([a, s]) => '<span class="chip">' + esc(a) + ' ' + fmtDur(s) + '</span>').join('') + '</div>' +
+    (w.titles && w.titles.length ? '<div class="muted win-titles">' + w.titles.map((t) => '「' + esc(t) + '」').join(' ') + '</div>' : '') +
+    (w.ai ? '<div class="ai-line">🤖 ' + esc(w.ai) + '</div>' : '') +
+    '</div>'
+  ).join('') || '<div class="empty">暂无数据</div>'
+
+  const cap = state.showAllShots ? d.shots.length : 96
+  const list = d.shots.slice().reverse().slice(0, cap)
+  $('shots-note').innerHTML = '共 ' + d.shots.length + ' 张（' + fmtBytes(d.shotsBytes) + '）' +
+    (d.shots.length > cap || state.showAllShots ? ' <button class="mini" onclick="toggleShots()">' + (state.showAllShots ? '收起' : '显示全部') + '</button>' : '')
+  $('shots').innerHTML = list.map((f) =>
+    '<img class="shot" loading="lazy" src="/shot/' + d.day + '/' + f + '" title="' + f.slice(0, 2) + ':' + f.slice(2, 4) + ':' + f.slice(4, 6) + ' 点击看大图" onclick="window.open(this.src)">'
+  ).join('') || '<div class="empty">这一天没有截图（可能未在运行或截图已过期清理）</div>'
+
+  $('day-ai').innerHTML = d.ai ? esc(d.ai) : '<span class="muted">暂无（免费模型可用时会自动生成，生成前显示模板统计即可）</span>'
+}
+window.toggleShots = function () {
+  state.showAllShots = !state.showAllShots
+  if (state.dayData) renderDay(state.dayData)
+}
+
+/* ---------- 此刻 / 状态 ---------- */
+function renderStatus(o) {
+  const bits = []
+  bits.push('<span><span class="dot ' + (o.daemon.running ? 'green' : 'red') + '"></span>记录' + (o.daemon.running ? '运行中' : '已停止') + '</span>')
+  bits.push('<span><span class="dot ' + (o.capture.running ? 'green' : 'red') + '"></span>采集' + (o.capture.running ? '运行中' : '已停止') + '</span>')
+  if (o.llm && o.llm.enabled) {
+    const broken = o.llm.until && o.llm.until > Date.now()
+    bits.push('<span><span class="dot ' + (broken ? 'amber' : 'green') + '"></span>AI ' + (broken ? '暂时不可用（自动重试）' : '就绪') + '</span>')
+  } else {
+    bits.push('<span><span class="dot gray"></span>AI 已关闭</span>')
+  }
+  $('status-badges').innerHTML = bits.join('')
+}
+function renderCurrent(o) {
+  const c = o.current
+  const idleTh = o.idleThresholdSeconds || 60
+  let body
+  if (!c) body = '<div class="muted">暂无采集数据</div>'
+  else if (Number(c.idle || 0) >= idleTh) body = '<div class="muted">🛋 已离开（空闲 ' + fmtDur(c.idle) + '）</div>'
+  else body = '<div class="cur-title">' + esc(c.title || '（无标题窗口）') + '</div>' +
+    '<div class="muted">' + esc(c.app || '（未知应用）') + ' · 记录于 ' + hm(Date.parse(c.ts)) + ' · 空闲 ' + (c.idle || 0) + ' 秒' +
+    (c.runMinutes >= 2 ? ' · 已持续 ' + c.runMinutes + ' 分钟' : '') + '</div>'
+  $('current-card').innerHTML = '<h3>此刻窗口</h3>' + body
+}
+
+async function refreshOverview() {
+  try {
+    const o = await api('/api/overview')
+    state.overview = o
+    renderStatus(o)
+    renderCurrent(o)
+    if (!state.day) await setDay(o.day, true)
+  } catch (e) {
+    $('status-badges').innerHTML = '<span><span class="dot red"></span>面板离线</span>'
+  }
+}
+
+/* ---------- 周视图 ---------- */
+async function loadWeek(wk) {
+  try {
+    const w = await api('/api/week?week=' + wk)
+    renderWeek(w)
+  } catch (e) { $('week-days').innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>' }
+  loadHeatmap()
+}
+
+function renderWeek(w) {
+  state.weekData = w
+  $('week-label').textContent = w.week
+  const diff = w.prevTotalSec > 0 ? w.totalActiveSec - w.prevTotalSec : null
+  $('week-cards').innerHTML = [
+    statCard('本周总活跃', fmtDur(w.totalActiveSec)),
+    statCard('有记录天数', w.days.filter((d) => d.activeSec > 0).length + ' / 7'),
+    statCard('较上周', diff == null ? '—' : '<span class="' + (diff >= 0 ? 'up' : 'down') + '">' + (diff >= 0 ? '+' : '−') + fmtDur(Math.abs(diff)) + '</span>',
+            w.prevTotalSec > 0 ? '上周 ' + fmtDur(w.prevTotalSec) : '上周无数据'),
+    statCard('最专注的一天', w.busiestDay || '—'),
+  ].join('')
+  $('week-days').innerHTML = '<table><tr><th>日期</th><th>星期</th><th class="num">活跃时长</th><th>主要应用</th></tr>' +
+    w.days.map((d) => '<tr><td>' + d.day + '</td><td>' + d.weekday + '</td><td class="num">' + (d.activeSec ? fmtDur(d.activeSec) : '—') + '</td><td>' +
+      (d.topApps.length ? d.topApps.map(([a, s]) => esc(a) + ' ' + fmtDur(s)).join('、') : '—') + '</td></tr>').join('') + '</table>'
+  const maxSec = w.apps.length ? w.apps[0][1] : 1
+  $('week-apps').innerHTML = w.apps.slice(0, 12).map(([a, s]) =>
+    '<div class="bar-row"><div class="bar-name" title="' + esc(a) + '">' + esc(a) + '</div>' +
+    '<div class="bar-track"><div class="bar-fill" style="width:' + (s / maxSec * 100).toFixed(1) + '%"></div></div>' +
+    '<div class="bar-val">' + fmtDur(s) + '</div></div>'
+  ).join('') || '<div class="empty">暂无数据</div>'
+  $('week-ai').innerHTML = w.ai ? esc(w.ai) : '<span class="muted">暂无（免费模型可用时会自动生成）</span>'
+}
+
+/* ---------- 活跃热力图 ---------- */
+async function loadHeatmap() {
+  if (state.heatmap) { renderHeatmap(state.heatmap); return }
+  try {
+    const h = await api('/api/heatmap?days=84')
+    state.heatmap = h
+    renderHeatmap(h)
+  } catch (e) { $('heatmap').innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>' }
+}
+
+function renderHeatmap(h) {
+  const days = (h && h.days) || []
+  if (!days.length) { $('heatmap').innerHTML = '<div class="empty">暂无数据</div>'; return }
+  const byWeek = new Map()
+  for (const it of days) {
+    const wk = isoWeekKey(it.d)
+    if (!byWeek.has(wk)) byWeek.set(wk, Array(7).fill(null))
+    const dow = (new Date(it.d + 'T12:00:00').getDay() + 6) % 7
+    byWeek.get(wk)[dow] = it
+  }
+  const d0 = new Date()
+  const todayStr = d0.getFullYear() + '-' + pad2(d0.getMonth() + 1) + '-' + pad2(d0.getDate())
+  const level = (sec) => sec <= 0 ? 0 : sec < 3600 ? 1 : sec < 10800 ? 2 : sec < 18000 ? 3 : 4
+  const cols = [...byWeek.keys()].sort()
+  $('heatmap').innerHTML = '<div class="hm-wrap">' + cols.map((wk) =>
+    '<div class="hm-col">' + byWeek.get(wk).map((it) => {
+      if (!it) return '<div class="hm-cell hm-empty"></div>'
+      const fut = it.d > todayStr
+      return '<div class="hm-cell' + (it.sec > 0 ? ' r' + level(it.sec) : '') + '"' + (fut ? ' style="opacity:.25"' : '') +
+        ' title="' + it.d + ' · 活跃 ' + (it.sec ? fmtDur(it.sec) : '0 秒') + '"></div>'
+    }).join('') + '</div>'
+  ).join('') + '</div>' +
+    '<div class="hm-legend">少<span class="hm-cell"></span><span class="hm-cell r1"></span><span class="hm-cell r2"></span><span class="hm-cell r3"></span><span class="hm-cell r4"></span>多<span class="muted" style="margin-left:8px">最深一格 ≥ 5 小时</span></div>'
+}
+
+/* ---------- 问一问 ---------- */
+const ASK_SUGGEST = ['今天我最专注的时段是几点？', '今天和昨天相比怎么样？', '这周的时间主要花在哪些应用上？', '我最近有没有熬夜的迹象？']
+$('ask-chips').innerHTML = ASK_SUGGEST.map((q) => '<button class="ask-chip">' + esc(q) + '</button>').join('')
+document.querySelectorAll('.ask-chip').forEach((el) => {
+  el.onclick = () => { $('ask-input').value = el.textContent; askQuestion() }
+})
+window.askQuestion = async function () {
+  const q = $('ask-input').value.trim()
+  if (!q || state.asking) return
+  state.asking = true
+  $('ask-btn').disabled = true
+  const box = $('ask-answer')
+  box.className = 'muted'
+  box.textContent = '🤔 AI 正在翻阅你的活动记录…（最长约 1 分钟）'
+  try {
+    const r = await api('/api/ask?q=' + encodeURIComponent(q))
+    if (r.ok) { box.className = ''; box.textContent = '🤖 ' + r.answer }
+    else { box.className = 'muted'; box.textContent = '⚠ ' + r.error }
+  } catch (e) {
+    box.className = 'muted'
+    box.textContent = '⚠ 请求失败：' + e.message
+  }
+  state.asking = false
+  $('ask-btn').disabled = false
+}
+$('ask-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') askQuestion() })
+
+/* ---------- 交互 ---------- */
+function setView(v) {
+  state.view = v
+  $('tab-day').classList.toggle('active', v === 'day')
+  $('tab-week').classList.toggle('active', v === 'week')
+  $('tab-ask').classList.toggle('active', v === 'ask')
+  $('view-day').classList.toggle('hidden', v !== 'day')
+  $('view-week').classList.toggle('hidden', v !== 'week')
+  $('view-ask').classList.toggle('hidden', v !== 'ask')
+  if (v === 'week') loadWeek(isoWeekKey(state.day || new Date().toISOString().slice(0, 10)))
+  if (v === 'ask') $('ask-input').focus()
+}
+$('tab-day').onclick = () => setView('day')
+$('tab-week').onclick = () => setView('week')
+$('tab-ask').onclick = () => setView('ask')
+$('prev-day').onclick = () => setDay(shiftDay(state.day, -1), true)
+$('next-day').onclick = () => setDay(shiftDay(state.day, 1), true)
+$('day-input').onchange = (e) => { if (e.target.value) setDay(e.target.value, true) }
+$('prev-week').onclick = () => setDay(shiftDay(state.day, -7), true)
+$('next-week').onclick = () => setDay(shiftDay(state.day, 7), true)
+
+refreshOverview()
+setInterval(async () => {
+  await refreshOverview()
+  if (state.view === 'day' && state.day === (state.overview && state.overview.day)) {
+    try { renderDay(await api('/api/day?day=' + state.day)) } catch { }
+  }
+  $('refresh-note').textContent = '每 30 秒自动刷新 · ' + new Date().toLocaleTimeString('zh-CN')
+}, 30000)
+</script>
+</body>
+</html>

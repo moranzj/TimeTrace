@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 语法检查 + 单元测试
+        run: npm test
+      - name: 预编译 capture.exe（Windows）
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $csc = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          & $csc /nologo /target:winexe /out:native\capture.exe native\capture.cs /r:System.dll /r:System.Core.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll
+          if (!(Test-Path native\capture.exe)) { throw 'capture.exe 编译失败' }
+      - name: 打包
+        shell: bash
+        run: |
+          set -e
+          BASE="timetrace-${GITHUB_REF_NAME}-${{ matrix.platform }}"
+          mkdir -p "dist/$BASE"
+          git archive --format=tar HEAD | tar -x -C "dist/$BASE"
+          if [ -f native/capture.exe ]; then cp native/capture.exe "dist/$BASE/native/capture.exe"; fi
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            powershell -NoProfile -Command "Compress-Archive -Path 'dist/$BASE' -DestinationPath 'dist/$BASE.zip' -Force"
+          else
+            tar -czf "dist/$BASE.tar.gz" -C dist "$BASE"
+          fi
+          ls -la dist
+      - name: 附加到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+          generate_release_notes: true

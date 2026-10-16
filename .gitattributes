@@ -1,0 +1,14 @@
+# 文本文件在仓库里统一用 LF；Windows 专用的脚本在检出时转 CRLF
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.vbs text eol=crlf
+*.cs text eol=crlf
+
+# 二进制资源不要做行尾/编码转换
+*.ico binary
+*.icns binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.exe binary

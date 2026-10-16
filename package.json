@@ -1,0 +1,53 @@
+{
+  "name": "timetrace",
+  "version": "1.0.0",
+  "description": "时迹 TimeTrace — 本地优先的个人活动追踪器：每 10 秒记录前台应用与截图，每 10 分钟总结，日报/周报 + AI 解读 + 图形面板。数据全部留在本机。",
+  "license": "MIT",
+  "bin": { "timetrace": "bin/timetrace.mjs" },
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node bin/timetrace.mjs start",
+    "stop": "node bin/timetrace.mjs stop",
+    "status": "node bin/timetrace.mjs status",
+    "web": "node bin/timetrace.mjs web --no-open",
+    "doctor": "node bin/timetrace.mjs doctor",
+    "icons": "node tools/make-icons.mjs",
+    "test": "node tools/check-syntax.mjs && node tools/run-tests.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "native",
+    "web",
+    "assets",
+    "tools",
+    "tests",
+    "daemon.mjs",
+    "config.json",
+    "install.sh",
+    "install.ps1",
+    "install.cmd",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "activity-tracker",
+    "time-tracking",
+    "screenshot",
+    "privacy",
+    "local-first",
+    "dashboard",
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moranzj/TimeTrace.git"
+  },
+  "homepage": "https://github.com/moranzj/TimeTrace#readme",
+  "bugs": {
+    "url": "https://github.com/moranzj/TimeTrace/issues"
+  }
+}
