@@ -18,6 +18,8 @@ Records the foreground app + screenshot every 10s · 10-minute summaries · dail
 
 ---
 
+> 📌 **Owner: [@moranzj](https://github.com/moranzj) only** — a few unrelated projects share the "TimeTrace" name (CLI tools, mobile apps, ...). This repo is the **desktop (Windows / macOS / Linux) local-first activity tracker & screen-time journal**; when searching, make sure the owner is **moranzj**.
+
 ## Features
 
 - 🔍 **Automatic tracking** — foreground app, window title, idle time, optional screenshots (deduplicated) every 10 seconds

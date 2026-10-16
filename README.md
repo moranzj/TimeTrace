@@ -18,6 +18,8 @@
 
 ---
 
+> 📌 **认准作者 [@moranzj](https://github.com/moranzj)** —— GitHub 上同名项目较多（CLI 工具、移动端应用等，均与本项目无关）。搜索「TimeTrace」时认准作者 **moranzj**；本仓库是 **Windows / macOS / Linux 桌面端**的**本地活动追踪器**（local-first activity tracker & screen-time journal）。
+
 ## 功能特性
 
 - 🔍 **自动记录**：每 10 秒记录当前前台应用、窗口标题、空闲时间，并可全屏截图（同画面自动去重，不重复落盘）
