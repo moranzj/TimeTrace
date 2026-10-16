@@ -54,4 +54,4 @@ jobs:
           files: |
             dist/*.zip
             dist/*.tar.gz
-          generate_release_notes: true
+          generate_release_notes: ${{ matrix.platform == 'linux' }}
